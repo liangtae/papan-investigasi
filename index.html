@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>赤い糸 Akai Ito — Papan Investigasi Digital</title>
+<meta name="description" content="Akai Ito (赤い糸) adalah papan investigasi digital ala detektif: susun kasus, tempel bukti, dan hubungkan petunjuk dengan benang merah di kanvas interaktif. 100% berjalan di peramban, data tersimpan lokal.">
+<meta name="theme-color" content="#a91e22">
+<meta property="og:title" content="赤い糸 Akai Ito — Papan Investigasi Digital">
+<meta property="og:description" content="Papan investigasi ala detektif di peramban: kelola kasus, tempel bukti, dan hubungkan benang merah antar petunjuk.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23a91e22'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23f7efd9' font-family='serif'%3E調%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#efe4c8;
+  --bg-2:#e6d9b8;
+  --paper:#f7efd9;
+  --panel:#f2e8cd;
+  --panel-2:#eadfba;
+  --ink:#2a2318;
+  --ink-soft:#5b5240;
+  --ink-faint:#8a7f68;
+  --border:#c9b98d;
+  --border-soft:#d9caa0;
+  --red:#a91e22;
+  --red-soft:#c33a35;
+  --gold:#a9812f;
+  --indigo:#3d5a73;
+  --shadow:rgba(42,35,24,.28);
+  --string:#a91e22;
+  --pin-shadow:0 6px 14px rgba(42,35,24,.35);
+  --c-dokumen:#5b7c99;
+  --c-foto:#c98a3e;
+  --c-audio:#4f8a7d;
+  --c-video:#8a5a8a;
+  --c-catatan:#b8973f;
+  --c-orang:#b3202f;
+  --c-tempat:#5c7a4a;
+  --c-lainnya:#8a7f6a;
+  --font-display:'Shippori Mincho', serif;
+  --font-body:'Zen Kaku Gothic New', sans-serif;
+  --font-seal:'Zen Old Mincho', serif;
+  --radius:3px;
+  --board-tile:#e9dcb8;
+}
+body.dark{
+  --bg:#16130f;
+  --bg-2:#1c1712;
+  --paper:#211b13;
+  --panel:#221c15;
+  --panel-2:#2a2318;
+  --ink:#ece2c8;
+  --ink-soft:#c3b795;
+  --ink-faint:#8d8062;
+  --border:#3d3423;
+  --border-soft:#332b1c;
+  --red:#d9524f;
+  --red-soft:#e0665f;
+  --gold:#cfa93e;
+  --indigo:#7ea4c2;
+  --shadow:rgba(0,0,0,.55);
+  --string:#d9524f;
+  --pin-shadow:0 6px 16px rgba(0,0,0,.6);
+  --board-tile:#1f1a12;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.10), transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(0,0,0,.05), transparent 40%),
+    var(--bg);
+  transition:background .3s ease,color .3s ease;
+  overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-faint);}
+
+/* keyboard accessibility: visible focus ring, mouse users unaffected */
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:2px;}
+.icon-btn:focus-visible,.mini-btn:focus-visible{outline-offset:3px;}
+
+h1,h2,h3,h4{font-family:var(--font-display);margin:0;font-weight:700;}
+.hidden{display:none !important;}
+
+/* ============ APP SHELL ============ */
+#app{height:100vh;display:flex;flex-direction:column;}
+
+/* HEADER */
+#topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:10px 18px;
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border-bottom:2px solid var(--border);
+  box-shadow:0 3px 10px var(--shadow);
+  z-index:50;position:relative;
+}
+.brand{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.hanko-logo{
+  width:38px;height:38px;border-radius:6px;
+  background:var(--red);color:#f7efd9;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-seal);font-size:20px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), 0 3px 6px rgba(0,0,0,.3);
+  letter-spacing:0;
+  transform:rotate(-2deg);
+}
+.brand-text{line-height:1.05;}
+.brand-text .jp{font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:.5px;color:var(--ink);}
+.brand-text .sub{font-size:11px;color:var(--ink-faint);letter-spacing:.5px;}
+#topbar-spacer{flex:1;}
+.icon-btn{
+  border:1px solid var(--border);background:var(--paper);color:var(--ink);
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s ease, background .15s ease, box-shadow .15s ease;
+  box-shadow:0 2px 4px var(--shadow);
+}
+.icon-btn:hover{transform:translateY(-1px);background:var(--panel-2);}
+.icon-btn:active{transform:translateY(0);}
+.text-btn{
+  border:1px solid var(--border);background:var(--paper);color:var(--ink);
+  padding:8px 14px;border-radius:20px;font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;
+  box-shadow:0 2px 4px var(--shadow);
+  transition:transform .15s ease, background .15s ease;
+}
+.text-btn:hover{transform:translateY(-1px);background:var(--panel-2);}
+.text-btn.primary{background:var(--red);border-color:var(--red);color:#fbf1de;}
+.text-btn.primary:hover{background:var(--red-soft);}
+.text-btn.ghost{background:transparent;}
+.text-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+/* ============ VIEWS ============ */
+#views{flex:1;position:relative;overflow:hidden;}
+.view{position:absolute;inset:0;overflow:auto;}
+
+/* -------- CASE LIST VIEW -------- */
+#caseListView{padding:30px 6vw 60px;}
+.list-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:22px;}
+.list-head h2{font-size:26px;}
+.list-head .desc{color:var(--ink-faint);font-size:13px;margin-top:4px;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px;}
+.search-box{
+  position:relative;flex:1;min-width:200px;
+}
+.search-box input{
+  width:100%;padding:9px 14px 9px 34px;border-radius:20px;border:1px solid var(--border);
+  background:var(--paper);color:var(--ink);font-size:13px;outline:none;
+}
+.search-box input:focus{border-color:var(--red);}
+.search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.55;}
+select.select{
+  padding:9px 12px;border-radius:20px;border:1px solid var(--border);background:var(--paper);
+  color:var(--ink);font-size:13px;outline:none;
+}
+.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;}
+.case-card{
+  position:relative;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 18px 16px;box-shadow:0 4px 10px var(--shadow);cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease;
+  overflow:hidden;
+}
+.case-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--red);
+}
+.case-card:hover{transform:translateY(-3px);box-shadow:0 10px 20px var(--shadow);}
+.case-card h3{font-size:17px;margin-bottom:6px;padding-right:40px;}
+.case-card p.desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 12px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.case-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.chip{
+  font-size:10.5px;padding:3px 9px;border-radius:12px;background:var(--panel-2);
+  border:1px solid var(--border-soft);color:var(--ink-soft);white-space:nowrap;
+}
+.countdown-badge{
+  font-size:11px;font-weight:700;padding:5px 10px;border-radius:12px;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.countdown-badge.ok{background:rgba(92,122,74,.18);color:#4c6a3f;}
+.countdown-badge.warn{background:rgba(169,129,47,.2);color:#8f6c22;}
+.countdown-badge.late{background:rgba(169,30,34,.18);color:var(--red);}
+.countdown-badge.done{background:rgba(138,127,106,.18);color:var(--ink-faint);}
+body.dark .countdown-badge.ok{color:#8fbf7a;}
+body.dark .countdown-badge.warn{color:#e0bd5c;}
+.case-stats{display:flex;gap:14px;font-size:11px;color:var(--ink-faint);border-top:1px dashed var(--border-soft);padding-top:10px;}
+.case-stats b{color:var(--ink-soft);}
+.duration-wrap{margin-bottom:12px;}
+.duration-track{height:6px;border-radius:4px;background:var(--panel-2);overflow:hidden;border:1px solid var(--border-soft);}
+.duration-fill{height:100%;border-radius:4px;transition:width .3s ease;}
+.duration-fill.ok{background:var(--c-tempat);}
+.duration-fill.warn{background:var(--gold);}
+.duration-fill.late{background:var(--red);}
+.duration-fill.done{background:var(--ink-faint);}
+.duration-label{font-size:10px;color:var(--ink-faint);margin-top:4px;line-height:1.4;}
+.solved-stamp{
+  position:absolute;top:12px;right:12px;
+  width:56px;height:56px;border:3px solid var(--red);border-radius:50%;
+  color:var(--red);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-seal);font-size:13px;font-weight:700;text-align:center;line-height:1.1;
+  transform:rotate(-14deg);opacity:.85;
+}
+.case-card-actions{position:absolute;bottom:10px;right:10px;display:flex;gap:4px;opacity:0;transition:opacity .15s ease;}
+.case-card:hover .case-card-actions{opacity:1;}
+.mini-btn{
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--panel);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+}
+.mini-btn:hover{background:var(--panel-2);color:var(--red);}
+
+.empty-state{
+  text-align:center;padding:70px 20px;color:var(--ink-faint);
+}
+.empty-state .ico{font-size:34px;opacity:.55;margin-bottom:10px;}
+.empty-state h3{font-size:18px;color:var(--ink-soft);margin-bottom:8px;}
+.empty-state p{font-size:13px;max-width:340px;margin:0 auto;}
+
+/* -------- BOARD VIEW -------- */
+#boardView{display:none;flex-direction:column;position:absolute;inset:0;}
+#boardView.active{display:flex;}
+.board-header{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--border);
+  z-index:30;
+}
+.board-title-wrap{display:flex;flex-direction:column;min-width:140px;}
+.board-title-wrap input.title-edit{
+  font-family:var(--font-display);font-size:18px;font-weight:700;border:none;background:transparent;color:var(--ink);
+  outline:none;border-bottom:1px dashed transparent;max-width:280px;
+}
+.board-title-wrap input.title-edit:focus{border-bottom-color:var(--border);}
+.board-countdown{font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:5px;}
+.board-countdown b{color:var(--ink-soft);}
+.board-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;}
+.board-toolbar .search-box{min-width:150px;}
+.board-toolbar .search-box input{padding:7px 12px 7px 30px;font-size:12px;}
+
+.board-main{flex:1;position:relative;overflow:hidden;}
+#boardCanvasWrap{
+  position:absolute;inset:0;overflow:hidden;cursor:grab;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(0,0,0,.035) 0, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(0,0,0,.035) 0, transparent 40%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0 2px, transparent 2px 42px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.015) 0 2px, transparent 2px 42px);
+  background-color:var(--board-tile);
+}
+#boardCanvasWrap.panning{cursor:grabbing;}
+#boardLayer{position:absolute;left:0;top:0;transform-origin:0 0;width:5000px;height:5000px;}
+#stringSvg{position:absolute;left:0;top:0;width:5000px;height:5000px;pointer-events:none;}
+#stringSvg path.string{pointer-events:stroke;cursor:pointer;}
+#stringSvg path.string-hit{pointer-events:stroke;stroke:transparent;stroke-width:16px;fill:none;cursor:pointer;}
+
+.pin-node{
+  position:absolute;width:190px;
+  transform:translate(-50%,-50%);
+  cursor:pointer;
+}
+.pin-node .pin-dot{
+  position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  width:16px;height:16px;border-radius:50%;
+  box-shadow:var(--pin-shadow), inset 0 0 0 2px rgba(255,255,255,.35);
+  z-index:2;border:1px solid rgba(0,0,0,.2);
+}
+.pin-card{
+  background:var(--paper);border:1px solid var(--border);border-radius:2px;
+  box-shadow:0 6px 14px var(--shadow);padding:12px 12px 10px;
+  transition:box-shadow .15s ease;
+}
+.pin-node:hover .pin-card{box-shadow:0 10px 22px var(--shadow);}
+.pin-node.selected .pin-card{outline:2px solid var(--red);outline-offset:2px;}
+.pin-node.pending .pin-card{outline:2px dashed var(--gold);outline-offset:2px;}
+.pin-node.dim{opacity:.22;}
+.pin-thumb{width:100%;height:76px;object-fit:cover;border-radius:1px;margin-bottom:8px;border:1px solid var(--border-soft);display:block;}
+.pin-type-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.pin-type-row .ty-icon{width:15px;height:15px;flex:none;}
+.pin-type-row span{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-faint);font-weight:700;}
+.pin-card h4{font-family:var(--font-body);font-size:13.5px;font-weight:700;line-height:1.3;margin-bottom:4px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pin-card .snippet{font-size:11px;color:var(--ink-soft);line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;min-height:14px;}
+.pin-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.pin-tags .chip{font-size:9px;padding:2px 7px;}
+
+.zoom-controls{
+  position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:20;
+}
+.hint-banner{
+  position:absolute;left:50%;top:14px;transform:translateX(-50%);
+  background:var(--gold);color:#2a2318;font-size:12px;font-weight:700;padding:8px 16px;border-radius:20px;
+  box-shadow:0 4px 10px var(--shadow);z-index:25;display:flex;align-items:center;gap:10px;
+}
+.hint-banner button{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;}
+
+/* SIDEBAR list */
+#sideList{
+  position:absolute;top:0;right:0;bottom:0;width:290px;background:var(--panel);
+  border-left:1px solid var(--border);box-shadow:-6px 0 16px var(--shadow);
+  transform:translateX(100%);transition:transform .25s ease;z-index:28;
+  display:flex;flex-direction:column;
+}
+#sideList.open{transform:translateX(0);}
+.side-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.side-head h4{font-size:14px;}
+.side-filters{padding:10px 14px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border-soft);}
+.side-filters select{width:100%;}
+#sideNodeList{flex:1;overflow:auto;padding:8px 10px;}
+.side-node-item{
+  padding:9px 10px;border-radius:4px;border:1px solid transparent;cursor:pointer;margin-bottom:4px;
+  display:flex;gap:8px;align-items:flex-start;
+}
+.side-node-item:hover{background:var(--panel-2);border-color:var(--border-soft);}
+.side-node-item .ty-icon{width:14px;height:14px;flex:none;margin-top:2px;}
+.side-node-item .t{font-size:12.5px;font-weight:700;line-height:1.3;}
+.side-node-item .m{font-size:10.5px;color:var(--ink-faint);}
+
+/* ============ MODALS ============ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,16,10,.55);backdrop-filter:blur(2px);
+  display:flex;align-items:center;justify-content:center;z-index:200;
+  opacity:0;pointer-events:none;transition:opacity .18s ease;
+}
+.modal-overlay.open{opacity:1;pointer-events:auto;}
+.modal-box{
+  background:var(--paper);border:1px solid var(--border);border-radius:4px;
+  width:92%;max-width:520px;max-height:88vh;overflow:auto;
+  box-shadow:0 20px 50px rgba(0,0,0,.4);
+  transform:translateY(14px) scale(.98);transition:transform .2s ease;
+}
+.modal-overlay.open .modal-box{transform:translateY(0) scale(1);}
+.modal-box.wide{max-width:640px;}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border-soft);
+}
+.modal-head h3{font-size:17px;}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border-soft);display:flex;justify-content:flex-end;gap:10px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;}
+.field input[type=text],.field input[type=date],.field textarea,.field select{
+  border:1px solid var(--border);background:var(--panel);color:var(--ink);border-radius:3px;
+  padding:9px 11px;font-size:13px;outline:none;width:100%;
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--red);}
+.field textarea{min-height:74px;resize:vertical;line-height:1.5;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.type-picker{display:flex;flex-wrap:wrap;gap:8px;}
+.type-opt{
+  border:1px solid var(--border);background:var(--panel);padding:7px 12px;border-radius:16px;font-size:12px;
+  display:flex;align-items:center;gap:6px;color:var(--ink-soft);
+}
+.type-opt.active{border-color:var(--type-c,var(--red));color:var(--ink);background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--type-c,var(--red));}
+.type-opt .ty-icon{width:14px;height:14px;}
+.file-drop{
+  border:1.5px dashed var(--border);border-radius:4px;padding:16px;text-align:center;font-size:12px;color:var(--ink-faint);
+  cursor:pointer;background:var(--panel);
+}
+.file-drop:hover{border-color:var(--red);}
+.file-preview{margin-top:8px;}
+.file-preview img{max-width:100%;max-height:180px;border-radius:3px;border:1px solid var(--border-soft);}
+.file-preview audio,.file-preview video{width:100%;margin-top:4px;}
+.file-preview .doc-chip{display:flex;align-items:center;gap:8px;font-size:12px;background:var(--panel-2);padding:8px 10px;border-radius:4px;}
+.remove-file{color:var(--red);font-size:11px;font-weight:700;background:none;border:none;margin-top:6px;padding:0;}
+.modal-danger-zone{border-top:1px dashed var(--border-soft);margin-top:4px;padding-top:14px;display:flex;justify-content:space-between;align-items:center;}
+.modal-danger-zone span{font-size:11.5px;color:var(--ink-faint);}
+
+/* confirm modal */
+#confirmModal .modal-body p{font-size:13.5px;line-height:1.6;color:var(--ink-soft);}
+
+/* ============ TOASTS ============ */
+#toastWrap{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:400;align-items:flex-end;}
+.toast{
+  background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--indigo);
+  padding:11px 16px;border-radius:3px;box-shadow:0 8px 20px var(--shadow);
+  font-size:12.5px;color:var(--ink);max-width:290px;
+  transform:translateX(120%);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .3s ease;
+}
+.toast.show{transform:translateX(0);opacity:1;}
+.toast.success{border-left-color:var(--c-tempat);}
+.toast.error{border-left-color:var(--red);}
+.toast.warn{border-left-color:var(--gold);}
+.toast b{display:block;font-weight:700;margin-bottom:2px;font-family:var(--font-display);}
+
+/* ============ CELEBRATION ============ */
+#celebrateOverlay{
+  position:fixed;inset:0;pointer-events:none;z-index:500;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.petal{
+  position:absolute;top:-30px;width:16px;height:16px;
+  background:radial-gradient(circle at 30% 30%, #ffd8e0, #e8879f 70%);
+  border-radius:0 60% 0 60%;opacity:.9;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) translateX(0) rotate(0deg);}
+  100%{transform:translateY(115vh) translateX(var(--drift,40px)) rotate(360deg);}
+}
+.stamp-pop{
+  position:absolute;width:220px;height:220px;border:6px solid var(--red);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  color:var(--red);font-family:var(--font-seal);
+  box-shadow:0 0 0 4px rgba(169,30,34,.15), 0 20px 50px rgba(0,0,0,.35);
+  background:rgba(247,239,217,.9);
+  transform:scale(3) rotate(-18deg);opacity:0;
+  animation:stampSlam .7s cubic-bezier(.2,.9,.25,1.35) forwards;
+}
+body.dark .stamp-pop{background:rgba(33,27,19,.92);}
+.stamp-pop .big{font-size:40px;font-weight:700;line-height:1;}
+.stamp-pop .small{font-size:12px;letter-spacing:2px;margin-top:6px;}
+@keyframes stampSlam{
+  0%{transform:scale(3) rotate(-18deg);opacity:0;}
+  55%{transform:scale(.92) rotate(-8deg);opacity:1;}
+  70%{transform:scale(1.05) rotate(-8deg);}
+  100%{transform:scale(1) rotate(-8deg);opacity:1;}
+}
+.stamp-fadeout{animation:stampFade .5s ease forwards;}
+@keyframes stampFade{to{opacity:0;transform:scale(1) rotate(-8deg) translateY(-10px);}}
+
+/* misc */
+.svg-ic{display:block;}
+.footer-tip{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:26px;}
+@media (max-width:720px){
+  .board-toolbar{margin-left:0;width:100%;}
+  #sideList{width:82vw;}
+  .field-row{grid-template-columns:1fr;}
+}
+@media (max-width:560px){
+  #topbar{padding:8px 12px;gap:8px;}
+  .brand-text .sub{display:none;}
+  #caseListView{padding:20px 4vw 50px;}
+  .list-head h2{font-size:21px;}
+  .case-grid{grid-template-columns:1fr;}
+  .board-toolbar .text-btn{padding:7px 10px;font-size:12px;}
+  .zoom-controls{bottom:10px;right:10px;}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="topbar">
+    <div class="brand" id="brandHome" title="Kembali ke daftar kasus">
+      <div class="hanko-logo">調</div>
+      <div class="brand-text">
+        <div class="jp">赤い糸 <span style="font-size:12px;font-weight:500;">Akai Ito</span></div>
+        <div class="sub">PAPAN INVESTIGASI DIGITAL</div>
+      </div>
+    </div>
+    <div id="topbar-spacer"></div>
+    <button class="icon-btn" id="themeToggle" title="Ganti mode terang/gelap" aria-label="Ganti mode terang/gelap"></button>
+    <button class="icon-btn" id="menuBackup" title="Cadangkan data (backup)" aria-label="Cadangkan data"></button>
+    <button class="icon-btn" id="menuRestore" title="Pulihkan data (restore)" aria-label="Pulihkan data"></button>
+    <button class="icon-btn" id="menuReset" title="Atur ulang semua data" aria-label="Atur ulang semua data"></button>
+  </div>
+
+  <div id="views">
+    <!-- ============ CASE LIST VIEW ============ -->
+    <div id="caseListView" class="view">
+      <div class="list-head">
+        <div>
+          <h2>Daftar Kasus</h2>
+          <div class="desc">Setiap kasus adalah papan investigasi tersendiri — kumpulkan bukti, hubungkan benang merah.</div>
+        </div>
+        <button class="text-btn primary" id="btnNewCase">＋ Kasus Baru</button>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+          <input type="text" id="caseSearch" placeholder="Cari kasus berdasarkan nama atau deskripsi…">
+        </div>
+        <select class="select" id="caseSort">
+          <option value="baru">Terbaru dibuat</option>
+          <option value="lama">Terlama dibuat</option>
+          <option value="nama">Nama A–Z</option>
+          <option value="deadline">Batas waktu terdekat</option>
+        </select>
+        <select class="select" id="caseStatusFilter">
+          <option value="semua">Semua status</option>
+          <option value="open">Masih berjalan</option>
+          <option value="selesai">Selesai</option>
+        </select>
+      </div>
+      <div class="case-grid" id="caseGrid"></div>
+      <div class="footer-tip">Data tersimpan otomatis di peramban ini (localStorage). Gunakan Cadangkan secara berkala untuk mengamankan data.</div>
+    </div>
+
+    <!-- ============ BOARD VIEW ============ -->
+    <div id="boardView" class="view">
+      <div class="board-header">
+        <button class="icon-btn" id="btnBackToList" title="Kembali">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="board-title-wrap">
+          <input type="text" class="title-edit" id="boardTitleInput" placeholder="Nama kasus">
+          <div class="board-countdown" id="boardCountdown"></div>
+          <div class="duration-wrap hidden" id="boardDurationWrap" style="max-width:280px;">
+            <div class="duration-track"><div class="duration-fill" id="boardDurationFill"></div></div>
+            <div class="duration-label" id="boardDurationLabel"></div>
+          </div>
+        </div>
+        <div class="board-toolbar">
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+            <input type="text" id="nodeSearch" placeholder="Cari data…">
+          </div>
+          <button class="text-btn" id="btnConnectMode">🧵 Hubungkan</button>
+          <button class="text-btn" id="btnOpenSideList">☰ Daftar</button>
+          <button class="text-btn" id="btnAddNode">＋ Tambah Data</button>
+          <button class="text-btn" id="btnCaseFile">📋 Berkas Kasus</button>
+          <button class="text-btn" id="btnMarkSolved">✓ Tandai Selesai</button>
+        </div>
+      </div>
+      <div class="board-main">
+        <div id="boardCanvasWrap">
+          <div id="boardLayer">
+            <svg id="stringSvg"></svg>
+            <div id="nodesContainer"></div>
+          </div>
+        </div>
+        <div class="hint-banner hidden" id="connectHint">
+          <span>Mode hubungkan aktif — klik dua data untuk membuat benang merah</span>
+          <button id="connectHintClose">Selesai</button>
+        </div>
+        <div class="zoom-controls">
+          <button class="icon-btn" id="zoomIn" title="Perbesar">＋</button>
+          <button class="icon-btn" id="zoomReset" title="Atur ulang tampilan">◎</button>
+          <button class="icon-btn" id="zoomOut" title="Perkecil">－</button>
+        </div>
+        <div id="sideList">
+          <div class="side-head">
+            <h4>Daftar Data <span id="sideCount" style="color:var(--ink-faint);font-weight:400;"></span></h4>
+            <button class="icon-btn" id="closeSideList">✕</button>
+          </div>
+          <div class="side-filters">
+            <select class="select" id="sideSort">
+              <option value="baru">Urutkan: Terbaru</option>
+              <option value="lama">Urutkan: Terlama</option>
+              <option value="az">Urutkan: Nama A–Z</option>
+              <option value="tipe">Urutkan: Tipe</option>
+            </select>
+            <select class="select" id="sideTagFilter">
+              <option value="">Semua tag</option>
+            </select>
+          </div>
+          <div id="sideNodeList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CASE ============ -->
+<div class="modal-overlay" id="caseModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="caseModalTitle">Kasus Baru</h3>
+      <button class="icon-btn" data-close="caseModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nama Kasus</label>
+        <input type="text" id="caseNameInput" placeholder="cth. Kasus Toko Buku yang Hilang">
+      </div>
+      <div class="field">
+        <label>Deskripsi Singkat</label>
+        <textarea id="caseDescInput" placeholder="Ringkasan kasus, latar belakang, atau catatan awal…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Mulai Investigasi</label>
+          <input type="date" id="caseStartInput">
+        </div>
+        <div class="field">
+          <label>Batas Waktu</label>
+          <input type="date" id="caseDeadlineInput">
+        </div>
+      </div>
+      <div class="modal-danger-zone hidden" id="caseDeleteZone">
+        <span>Hapus kasus ini beserta seluruh datanya secara permanen.</span>
+        <button class="text-btn" style="border-color:var(--red);color:var(--red);" id="btnDeleteCase">Hapus Kasus</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="text-btn ghost" data-close="caseModal">Batal</button>
+      <button class="text-btn primary" id="btnSaveCase">Simpan Kasus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NODE ============ -->
+<div class="modal-overlay" id="nodeModal">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h3 id="nodeModalTitle">Tambah Data</h3>
+      <button class="icon-btn" data-close="nodeModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Jenis Data</label>
+        <div class="type-picker" id="typePicker"></div>
+      </div>
+      <div class="field">
+        <label>Judul</label>
+        <input type="text" id="nodeTitleInput" placeholder="cth. Nota pembelian, Wawancara saksi, Foto TKP…">
+      </div>
+      <div class="field">
+        <label>Deskripsi / Catatan</label>
+        <textarea id="nodeDescInput" placeholder="Detail, konteks, atau hasil analisis…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Orang Terkait</label>
+          <input type="text" id="nodePersonInput" placeholder="cth. Ahmad, saksi mata">
+        </div>
+        <div class="field">
+          <label>Tempat Terkait</label>
+          <input type="text" id="nodePlaceInput" placeholder="cth. Gudang Utara">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Tanggal Kejadian</label>
+          <input type="date" id="nodeDateInput">
+        </div>
+        <div class="field">
+          <label>Tag (pisahkan dengan koma)</label>
+          <input type="text" id="nodeTagsInput" placeholder="cth. penting, alibi, tersangka">
+        </div>
+      </div>
+      <div class="field">
+        <label>Lampiran File (foto/audio/video/dokumen)</label>
+        <div class="file-drop" id="fileDropZone">Klik untuk memilih file, atau seret file ke sini</div>
+        <input type="file" id="fileInputHidden" class="hidden">
+        <div class="file-preview" id="filePreviewArea"></div>
+      </div>
+      <div class="modal-danger-zone hidden" id="nodeDeleteZone">
+        <span>Hapus data ini dan seluruh hubungannya.</span>
+        <button class="text-btn" style="border-color:var(--red);color:var(--red);" id="btnDeleteNode">Hapus Data</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="text-btn ghost" data-close="nodeModal">Batal</button>
+      <button class="text-btn primary" id="btnSaveNode">Simpan Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDGE LABEL ============ -->
+<div class="modal-overlay" id="edgeModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="edgeModalTitle">Hubungan Data</h3>
+      <button class="icon-btn" data-close="edgeModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Keterangan Hubungan (opsional)</label>
+        <input type="text" id="edgeLabelInput" placeholder="cth. mengenal, ditemukan di, terjadi sebelum…">
+      </div>
+      <div class="modal-danger-zone hidden" id="edgeDeleteZone">
+        <span>Putuskan benang penghubung ini.</span>
+        <button class="text-btn" style="border-color:var(--red);color:var(--red);" id="btnDeleteEdge">Putuskan</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="text-btn ghost" data-close="edgeModal">Batal</button>
+      <button class="text-btn primary" id="btnSaveEdge">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: RESOLUTION (Berkas Kesimpulan Kasus) ============ -->
+<div class="modal-overlay" id="resolutionModal">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h3 id="resolutionModalTitle">Berkas Kesimpulan Kasus</h3>
+      <button class="icon-btn" data-close="resolutionModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="resolutionModalHint" style="font-size:12px;color:var(--ink-faint);margin:0;line-height:1.5;"></p>
+      <div class="field">
+        <label>Kronologi Kejadian</label>
+        <textarea id="resKronologi" placeholder="Urutan peristiwa dari awal hingga akhir…" style="min-height:110px;"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Lokasi Kejadian</label>
+          <input type="text" id="resLokasi" list="tempatDatalist" placeholder="cth. Gudang Utara">
+        </div>
+        <div class="field">
+          <label>Pelaku</label>
+          <input type="text" id="resPelaku" list="orangDatalist" placeholder="cth. Ahmad">
+        </div>
+      </div>
+      <div class="field">
+        <label>Saksi-Saksi</label>
+        <textarea id="resSaksi" placeholder="Satu nama per baris, sertakan keterangan singkat bila perlu…"></textarea>
+      </div>
+      <div class="field">
+        <label>Alibi</label>
+        <textarea id="resAlibi" placeholder="Alibi tersangka/pihak terkait beserta keterangannya…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Motif</label>
+          <input type="text" id="resMotif" placeholder="cth. Dendam, keuntungan finansial…">
+        </div>
+        <div class="field">
+          <label>Barang Bukti Kunci</label>
+          <input type="text" id="resBukti" placeholder="cth. Nota, rekaman CCTV…">
+        </div>
+      </div>
+      <div class="field">
+        <label>Kesimpulan Akhir</label>
+        <textarea id="resKesimpulan" placeholder="Ringkasan akhir bagaimana kasus ini terpecahkan…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="text-btn ghost" data-close="resolutionModal">Batal</button>
+      <button class="text-btn" id="btnSaveResolutionDraft">Simpan Draf</button>
+      <button class="text-btn primary" id="btnSaveResolutionSolve">Tandai Selesai ✓</button>
+    </div>
+  </div>
+</div>
+<datalist id="orangDatalist"></datalist>
+<datalist id="tempatDatalist"></datalist>
+
+<!-- ============ MODAL: CONFIRM ============ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="confirmModalTitle">Konfirmasi</h3>
+      <button class="icon-btn" data-close="confirmModal">✕</button>
+    </div>
+    <div class="modal-body"><p id="confirmModalText"></p></div>
+    <div class="modal-foot">
+      <button class="text-btn ghost" data-close="confirmModal">Batal</button>
+      <button class="text-btn primary" id="confirmModalOk" style="background:var(--red);border-color:var(--red);">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="restoreFileInput" accept="application/json" class="hidden">
+<div id="toastWrap"></div>
+<div id="celebrateOverlay"></div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+/* ======================================================================
+   赤い糸 — Papan Investigasi Digital
+   Single-file app: localStorage persistence, drag-pin board, red-string
+   connections, cases with countdown, backup/restore, light/dark theme.
+   ====================================================================== */
+(function(){
+"use strict";
+
+const DB_KEY = "akaiIto_db_v1";
+const uid = ()=> 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+const TYPE_META = {
+  dokumen: {label:"Dokumen", color:"var(--c-dokumen)", icon:iDokumen()},
+  foto:    {label:"Foto",    color:"var(--c-foto)",    icon:iFoto()},
+  audio:   {label:"Audio",   color:"var(--c-audio)",   icon:iAudio()},
+  video:   {label:"Video",   color:"var(--c-video)",   icon:iVideo()},
+  catatan: {label:"Catatan", color:"var(--c-catatan)", icon:iCatatan()},
+  orang:   {label:"Orang",   color:"var(--c-orang)",   icon:iOrang()},
+  tempat:  {label:"Tempat",  color:"var(--c-tempat)",  icon:iTempat()},
+  lainnya: {label:"Lainnya", color:"var(--c-lainnya)", icon:iLainnya()},
+};
+
+function iDokumen(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><line x1="9" y1="13" x2="16" y2="13"/><line x1="9" y1="17" x2="16" y2="17"/></svg>';}
+function iFoto(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="9" cy="11" r="2.2"/><path d="M21 17l-6-5-4 3.5-2-1.5-6 4.5"/></svg>';}
+function iAudio(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="7" x2="8" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="16" y1="7" x2="16" y2="17"/><line x1="20" y1="10" x2="20" y2="14"/></svg>';}
+function iVideo(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="5.5" width="14" height="13" rx="1.5"/><path d="M16.5 10l5-3v10l-5-3z"/></svg>';}
+function iCatatan(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5z"/><line x1="8.5" y1="9" x2="15.5" y2="9"/><line x1="8.5" y1="13" x2="15.5" y2="13"/><line x1="8.5" y1="17" x2="12.5" y2="17"/></svg>';}
+function iOrang(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.4-4 4.2-6 7.5-6s6.1 2 7.5 6"/></svg>';}
+function iTempat(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3"/></svg>';}
+function iLainnya(){return '<svg class="svg-ic ty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';}
+
+/* ---------------- STATE / PERSISTENCE ---------------- */
+let db = loadDb();
+function loadDb(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.cases)) return parsed;
+    }
+  }catch(e){ console.warn("Gagal memuat data", e); }
+  return { settings:{theme:'light'}, cases:[] };
+}
+function saveDb(){
+  try{
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    return true;
+  }catch(e){
+    notify("error","Gagal menyimpan","Penyimpanan penuh atau tidak tersedia. Coba hapus lampiran berukuran besar.");
+    return false;
+  }
+}
+
+let currentCaseId = null;
+let board = { zoom:1, panX:60, panY:60 };
+let connectMode = false;
+let pendingNodeId = null;
+let pendingEdgeEdit = null; // edge id being edited, or null for new
+let pendingEdgeFrom = null, pendingEdgeTo = null;
+let editingNodeId = null;
+let editingCaseId = null;
+let currentFileData = null; // {name,mime,data}
+let sideSearchDebounce = null;
+
+function getCase(id){ return db.cases.find(c=>c.id===id); }
+function currentCase(){ return getCase(currentCaseId); }
+
+/* ---------------- THEME ---------------- */
+function applyTheme(){
+  $('body').toggleClass('dark', db.settings.theme === 'dark');
+  $('#themeToggle').html(db.settings.theme==='dark' ? iconSun() : iconMoon());
+}
+function iconSun(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg>';}
+function iconMoon(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 14.5A8.5 8.5 0 1110.2 4.3 6.7 6.7 0 0020 14.5z"/></svg>';}
+$('#themeToggle').on('click', function(){
+  db.settings.theme = db.settings.theme==='dark' ? 'light' : 'dark';
+  applyTheme(); saveDb();
+});
+
+/* ---------------- TOASTS ---------------- */
+function notify(type, title, msg){
+  const $t = $('<div class="toast"></div>').addClass(type);
+  $t.html('<b>'+escapeHtml(title)+'</b>'+ (msg?escapeHtml(msg):''));
+  $('#toastWrap').append($t);
+  requestAnimationFrame(()=> requestAnimationFrame(()=> $t.addClass('show')));
+  setTimeout(()=>{
+    $t.removeClass('show');
+    setTimeout(()=> $t.remove(), 320);
+  }, 3800);
+}
+
+/* ---------------- UTIL ---------------- */
+function escapeHtml(s){
+  if(s===undefined||s===null) return '';
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d){
+  if(!d) return '';
+  const dt = new Date(d+'T00:00:00');
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+}
+function daysBetween(a,b){
+  return Math.ceil((b-a)/86400000);
+}
+function fmtDateObj(d){
+  if(!(d instanceof Date) || isNaN(d)) return '';
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+}
+function caseDurationInfo(c){
+  if(!c.batasWaktu) return null;
+  const start = new Date(c.createdAt); start.setHours(0,0,0,0);
+  const deadline = new Date(c.batasWaktu+'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const totalDays = Math.max(1, daysBetween(start, deadline));
+  let elapsedDays = daysBetween(start, today);
+  elapsedDays = Math.max(0, Math.min(totalDays, elapsedDays));
+  const pct = Math.round(elapsedDays/totalDays*100);
+  return {totalDays, elapsedDays, pct};
+}
+function ensureResolution(c){
+  if(!c.resolution) c.resolution = {kronologi:'',lokasi:'',pelaku:'',saksi:'',alibi:'',motif:'',bukti:'',kesimpulan:''};
+  return c.resolution;
+}
+function resolutionHasContent(c){
+  const r = c.resolution; if(!r) return false;
+  return Object.values(r).some(v=> (v||'').toString().trim().length>0);
+}
+function openModal(id){ $('#'+id).addClass('open'); }
+function closeModal(id){ $('#'+id).removeClass('open'); }
+$(document).on('click', '[data-close]', function(){ closeModal($(this).data('close')); });
+$('.modal-overlay').on('mousedown', function(e){ if(e.target===this) closeModal(this.id); });
+
+function confirmAction(title, text, onOk){
+  $('#confirmModalTitle').text(title);
+  $('#confirmModalText').text(text);
+  openModal('confirmModal');
+  $('#confirmModalOk').off('click').on('click', function(){
+    closeModal('confirmModal');
+    onOk();
+  });
+}
+
+/* ================= CASE LIST VIEW ================= */
+function caseStatusInfo(c){
+  if(c.status==='selesai') return {cls:'done', label:'Selesai'};
+  if(!c.batasWaktu) return {cls:'ok', label:'Tanpa batas waktu'};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dl = new Date(c.batasWaktu+'T00:00:00');
+  const diff = daysBetween(today, dl);
+  if(diff < 0) return {cls:'late', label:'Terlambat '+Math.abs(diff)+' hari'};
+  if(diff === 0) return {cls:'late', label:'Batas waktu hari ini'};
+  if(diff <= 7) return {cls:'warn', label:diff+' hari lagi'};
+  return {cls:'ok', label:diff+' hari lagi'};
+}
+
+function renderCaseList(){
+  const q = $('#caseSearch').val().trim().toLowerCase();
+  const sort = $('#caseSort').val();
+  const statusF = $('#caseStatusFilter').val();
+  let list = db.cases.filter(c=>{
+    if(statusF!=='semua' && (statusF==='selesai') !== (c.status==='selesai')) return false;
+    if(!q) return true;
+    return (c.name||'').toLowerCase().includes(q) || (c.desc||'').toLowerCase().includes(q);
+  });
+  list.sort((a,b)=>{
+    if(sort==='baru') return b.createdAt-a.createdAt;
+    if(sort==='lama') return a.createdAt-b.createdAt;
+    if(sort==='nama') return (a.name||'').localeCompare(b.name||'');
+    if(sort==='deadline'){
+      if(!a.batasWaktu) return 1; if(!b.batasWaktu) return -1;
+      return new Date(a.batasWaktu) - new Date(b.batasWaktu);
+    }
+    return 0;
+  });
+
+  const $grid = $('#caseGrid').empty();
+  if(list.length===0){
+    const msg = q || statusF!=='semua' ? 'Coba ubah kata kunci pencarian atau filter status.' : 'Buat kasus baru untuk mulai memasang data dan menghubungkan benang merah pertamamu.';
+    const heading = q || statusF!=='semua' ? 'Tidak ada kasus yang cocok' : 'Belum ada kasus';
+    $grid.append('<div class="empty-state" style="grid-column:1/-1;"><div class="ico">🧵</div><h3>'+heading+'</h3><p>'+msg+'</p></div>');
+    return;
+  }
+  list.forEach(c=>{
+    const st = caseStatusInfo(c);
+    const $card = $('<div class="case-card"></div>');
+    $card.append('<h3>'+escapeHtml(c.name||'Tanpa nama')+'</h3>');
+    if(c.status==='selesai'){
+      $card.append('<div class="solved-stamp">解決<br><span style="font-size:8px;letter-spacing:1px;">SOLVED</span></div>');
+    }
+    $card.append('<p class="desc">'+escapeHtml(c.desc||'Belum ada deskripsi.')+'</p>');
+    const $meta = $('<div class="case-meta"></div>');
+    if(c.tanggalMulai) $meta.append('<span class="chip">Mulai '+fmtDate(c.tanggalMulai)+'</span>');
+    if(c.batasWaktu) $meta.append('<span class="chip">Tenggat '+fmtDate(c.batasWaktu)+'</span>');
+    $meta.append('<span class="countdown-badge '+st.cls+'">'+st.label+'</span>');
+    if(resolutionHasContent(c)) $meta.append('<span class="chip">📋 Berkas terisi</span>');
+    $card.append($meta);
+    const di = caseDurationInfo(c);
+    if(di){
+      $card.append('<div class="duration-wrap"><div class="duration-track"><div class="duration-fill '+st.cls+'" style="width:'+di.pct+'%"></div></div><div class="duration-label">Dibuat '+fmtDateObj(new Date(c.createdAt))+' → Tenggat '+fmtDate(c.batasWaktu)+' · hari ke-'+di.elapsedDays+' dari '+di.totalDays+' ('+di.pct+'%)</div></div>');
+    }
+    const nodeCount = c.nodes.length, edgeCount = c.edges.length;
+    $card.append('<div class="case-stats"><div><b>'+nodeCount+'</b> data</div><div><b>'+edgeCount+'</b> hubungan</div></div>');
+    const $actions = $('<div class="case-card-actions"></div>');
+    const $editBtn = $('<button class="mini-btn" title="Sunting kasus">✎</button>');
+    $editBtn.on('click', function(e){ e.stopPropagation(); openCaseModal(c.id); });
+    $actions.append($editBtn);
+    $card.append($actions);
+    $card.on('click', ()=> openBoard(c.id));
+    $grid.append($card);
+  });
+}
+$('#caseSearch').on('input', renderCaseList);
+$('#caseSort, #caseStatusFilter').on('change', renderCaseList);
+$('#brandHome').on('click', showCaseList);
+
+function showCaseList(){
+  currentCaseId = null;
+  $('#boardView').removeClass('active');
+  $('#caseListView').show();
+  renderCaseList();
+}
+
+/* ---- Case Modal ---- */
+function openCaseModal(id){
+  editingCaseId = id || null;
+  const c = id ? getCase(id) : null;
+  $('#caseModalTitle').text(c ? 'Sunting Kasus' : 'Kasus Baru');
+  $('#caseNameInput').val(c ? c.name : '');
+  $('#caseDescInput').val(c ? c.desc : '');
+  $('#caseStartInput').val(c ? c.tanggalMulai : '');
+  $('#caseDeadlineInput').val(c ? c.batasWaktu : '');
+  $('#caseDeleteZone').toggleClass('hidden', !c);
+  openModal('caseModal');
+}
+$('#btnNewCase').on('click', ()=> openCaseModal(null));
+$('#btnSaveCase').on('click', function(){
+  const name = $('#caseNameInput').val().trim();
+  if(!name){ notify('warn','Nama kasus wajib diisi'); return; }
+  if(editingCaseId){
+    const c = getCase(editingCaseId);
+    c.name = name; c.desc = $('#caseDescInput').val().trim();
+    c.tanggalMulai = $('#caseStartInput').val(); c.batasWaktu = $('#caseDeadlineInput').val();
+    notify('success','Kasus diperbarui', name);
+  } else {
+    const c = {
+      id: uid(), name, desc: $('#caseDescInput').val().trim(),
+      tanggalMulai: $('#caseStartInput').val(), batasWaktu: $('#caseDeadlineInput').val(),
+      status:'open', createdAt: Date.now(), nodes:[], edges:[],
+      resolution:{kronologi:'',lokasi:'',pelaku:'',saksi:'',alibi:'',motif:'',bukti:'',kesimpulan:''}
+    };
+    db.cases.unshift(c);
+    notify('success','Kasus dibuat', name);
+  }
+  saveDb(); closeModal('caseModal'); renderCaseList();
+});
+$('#btnDeleteCase').on('click', function(){
+  const c = getCase(editingCaseId);
+  closeModal('caseModal');
+  confirmAction('Hapus Kasus', 'Kasus "'+c.name+'" beserta seluruh data dan hubungannya akan dihapus permanen. Lanjutkan?', ()=>{
+    db.cases = db.cases.filter(x=>x.id!==editingCaseId);
+    saveDb(); renderCaseList();
+    notify('success','Kasus dihapus');
+  });
+});
+
+/* ================= BOARD VIEW ================= */
+function openBoard(id){
+  currentCaseId = id;
+  const c = currentCase();
+  if(!c) return;
+  $('#caseListView').hide();
+  $('#boardView').addClass('active');
+  $('#boardTitleInput').val(c.name);
+  board = { zoom:1, panX:60, panY:60 };
+  connectMode = false; pendingNodeId = null;
+  $('#connectHint').addClass('hidden');
+  $('#btnConnectMode').removeClass('active-mode');
+  applyBoardTransform();
+  renderBoardHeader();
+  renderNodes();
+  renderEdges();
+  renderSideList();
+  updateSolvedButton();
+}
+$('#btnBackToList').on('click', showCaseList);
+
+let titleDebounce=null;
+$('#boardTitleInput').on('input', function(){
+  const c = currentCase(); if(!c) return;
+  c.name = $(this).val();
+  clearTimeout(titleDebounce);
+  titleDebounce = setTimeout(()=>{ saveDb(); renderCaseList(); }, 400);
+});
+
+function renderBoardHeader(){
+  const c = currentCase(); if(!c) return;
+  updateCountdownDisplay();
+}
+function updateCountdownDisplay(){
+  const c = currentCase(); if(!c) return;
+  const $el = $('#boardCountdown');
+  if(c.status==='selesai'){
+    $el.html('<b>Kasus telah ditandai selesai 解決</b>'); return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = '';
+  if(c.tanggalMulai){
+    const start = new Date(c.tanggalMulai+'T00:00:00');
+    const d = daysBetween(today,start);
+    if(d>0) html += 'Investigasi dimulai dalam <b>'+d+' hari</b>';
+    else html += 'Investigasi berjalan <b>'+Math.abs(d)+' hari</b>';
+  }
+  if(c.batasWaktu){
+    const dl = new Date(c.batasWaktu+'T00:00:00');
+    const d = daysBetween(today,dl);
+    if(html) html += ' &nbsp;·&nbsp; ';
+    if(d<0) html += '<b style="color:var(--red);">Terlambat '+Math.abs(d)+' hari</b>';
+    else if(d===0) html += '<b style="color:var(--red);">Batas waktu hari ini</b>';
+    else html += 'Batas waktu <b>'+d+' hari lagi</b>';
+  }
+  if(!html) html = 'Belum ada tanggal mulai / batas waktu diatur';
+  $el.html(html);
+
+  const di = caseDurationInfo(c);
+  if(di){
+    const dCls = c.status==='selesai' ? 'done' : caseStatusInfo(c).cls;
+    $('#boardDurationFill').attr('class','duration-fill '+dCls).css('width', di.pct+'%');
+    $('#boardDurationLabel').text('Durasi kasus: dibuat '+fmtDateObj(new Date(c.createdAt))+' → tenggat '+fmtDate(c.batasWaktu)+' · hari ke-'+di.elapsedDays+' dari '+di.totalDays+' ('+di.pct+'%)');
+    $('#boardDurationWrap').removeClass('hidden');
+  } else {
+    $('#boardDurationWrap').addClass('hidden');
+  }
+}
+setInterval(()=>{ if(currentCaseId) updateCountdownDisplay(); }, 60000);
+
+function updateSolvedButton(){
+  const c = currentCase(); if(!c) return;
+  $('#btnMarkSolved').text(c.status==='selesai' ? '↺ Buka Kembali Kasus' : '✓ Tandai Selesai');
+}
+$('#btnMarkSolved').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  if(c.status==='selesai'){
+    c.status='open'; saveDb(); updateSolvedButton(); updateCountdownDisplay(); renderCaseList();
+    notify('success','Kasus dibuka kembali', c.name);
+  } else {
+    openResolutionModal();
+  }
+});
+
+/* ---------------- RESOLUTION MODAL (Berkas Kesimpulan Kasus) ---------------- */
+function populateResolutionDatalists(c){
+  const orangSet = new Set(), tempatSet = new Set();
+  c.nodes.forEach(n=>{
+    if(n.type==='orang' && n.title) orangSet.add(n.title);
+    if(n.type==='tempat' && n.title) tempatSet.add(n.title);
+    if(n.person) orangSet.add(n.person);
+    if(n.place) tempatSet.add(n.place);
+  });
+  const $od = $('#orangDatalist').empty();
+  orangSet.forEach(v=> $od.append('<option value="'+escapeHtml(v)+'">'));
+  const $td = $('#tempatDatalist').empty();
+  tempatSet.forEach(v=> $td.append('<option value="'+escapeHtml(v)+'">'));
+}
+function openResolutionModal(){
+  const c = currentCase(); if(!c) return;
+  const r = ensureResolution(c);
+  populateResolutionDatalists(c);
+  $('#resKronologi').val(r.kronologi||'');
+  $('#resLokasi').val(r.lokasi||'');
+  $('#resPelaku').val(r.pelaku||'');
+  $('#resSaksi').val(r.saksi||'');
+  $('#resAlibi').val(r.alibi||'');
+  $('#resMotif').val(r.motif||'');
+  $('#resBukti').val(r.bukti||'');
+  $('#resKesimpulan').val(r.kesimpulan||'');
+  const solved = c.status==='selesai';
+  $('#resolutionModalTitle').text(solved ? 'Berkas Kesimpulan Kasus (Selesai)' : 'Susun Berkas Kesimpulan Kasus');
+  $('#resolutionModalHint').text(solved
+    ? 'Kasus ini sudah ditandai selesai. Kamu masih bisa memperbarui berkasnya kapan saja.'
+    : 'Lengkapi kronologi, saksi, pelaku, lokasi, dan alibi. Simpan sebagai draf, atau tandai kasus selesai bila sudah lengkap.');
+  $('#btnSaveResolutionDraft').text(solved ? 'Simpan Perubahan' : 'Simpan Draf');
+  $('#btnSaveResolutionSolve').toggleClass('hidden', solved);
+  openModal('resolutionModal');
+}
+function readResolutionForm(){
+  return {
+    kronologi:$('#resKronologi').val().trim(),
+    lokasi:$('#resLokasi').val().trim(),
+    pelaku:$('#resPelaku').val().trim(),
+    saksi:$('#resSaksi').val().trim(),
+    alibi:$('#resAlibi').val().trim(),
+    motif:$('#resMotif').val().trim(),
+    bukti:$('#resBukti').val().trim(),
+    kesimpulan:$('#resKesimpulan').val().trim()
+  };
+}
+$('#btnCaseFile').on('click', openResolutionModal);
+$('#btnSaveResolutionDraft').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  c.resolution = readResolutionForm();
+  saveDb(); closeModal('resolutionModal'); renderCaseList();
+  notify('success','Berkas kesimpulan disimpan');
+});
+$('#btnSaveResolutionSolve').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  c.resolution = readResolutionForm();
+  c.status = 'selesai';
+  saveDb(); closeModal('resolutionModal');
+  updateSolvedButton(); updateCountdownDisplay(); renderCaseList();
+  celebrate();
+  notify('success','Kasus ditandai selesai', c.name+' — berkas kesimpulan tersimpan.');
+});
+
+/* ---------------- ZOOM / PAN ---------------- */
+function applyBoardTransform(){
+  $('#boardLayer').css('transform', 'translate('+board.panX+'px,'+board.panY+'px) scale('+board.zoom+')');
+}
+$('#zoomIn').on('click', ()=>{ board.zoom=Math.min(2, board.zoom+0.15); applyBoardTransform(); });
+$('#zoomOut').on('click', ()=>{ board.zoom=Math.max(0.35, board.zoom-0.15); applyBoardTransform(); });
+$('#zoomReset').on('click', ()=>{ board={zoom:1,panX:60,panY:60}; applyBoardTransform(); });
+
+let isPanning=false, panStart={x:0,y:0}, panOrigin={x:0,y:0};
+$('#boardCanvasWrap').on('mousedown', function(e){
+  if($(e.target).closest('.pin-node').length) return;
+  isPanning=true; panStart={x:e.clientX,y:e.clientY}; panOrigin={x:board.panX,y:board.panY};
+  $(this).addClass('panning');
+});
+$(document).on('mousemove', function(e){
+  if(isPanning){
+    board.panX = panOrigin.x + (e.clientX-panStart.x);
+    board.panY = panOrigin.y + (e.clientY-panStart.y);
+    applyBoardTransform();
+  }
+  if(draggingNode){
+    const c=currentCase(); const node = c.nodes.find(n=>n.id===draggingNode);
+    if(node){
+      node.x = dragNodeOrigin.x + (e.clientX-dragStart.x)/board.zoom;
+      node.y = dragNodeOrigin.y + (e.clientY-dragStart.y)/board.zoom;
+      positionNodeEl(node);
+      drawEdgesForNode(node.id);
+    }
+  }
+});
+$(document).on('mouseup', function(){
+  if(isPanning){ isPanning=false; $('#boardCanvasWrap').removeClass('panning'); }
+  if(draggingNode){ draggingNode=null; saveDb(); }
+});
+$('#boardCanvasWrap').on('wheel', function(e){
+  e.preventDefault();
+  const delta = e.originalEvent.deltaY;
+  board.zoom = Math.max(0.35, Math.min(2, board.zoom + (delta<0?0.08:-0.08)));
+  applyBoardTransform();
+}, {passive:false});
+
+/* ---------------- NODES: render + drag ---------------- */
+let draggingNode=null, dragStart={x:0,y:0}, dragNodeOrigin={x:0,y:0};
+
+function positionNodeEl(node){
+  $('#node-'+node.id).css({left:node.x+'px', top:node.y+'px'});
+}
+
+function nodeMatchesSearch(node, q){
+  if(!q) return true;
+  const hay = [node.title,node.desc,node.person,node.place,(node.tags||[]).join(' ')].join(' ').toLowerCase();
+  return hay.includes(q);
+}
+function nodeMatchesTag(node, tag){
+  if(!tag) return true;
+  return (node.tags||[]).includes(tag);
+}
+
+function renderNodes(){
+  const c = currentCase(); if(!c) return;
+  const $cont = $('#nodesContainer').empty();
+  const q = $('#nodeSearch').val().trim().toLowerCase();
+  c.nodes.forEach(node=>{
+    const meta = TYPE_META[node.type] || TYPE_META.lainnya;
+    const $n = $('<div class="pin-node" id="node-'+node.id+'"></div>');
+    $n.css({left:node.x+'px', top:node.y+'px'});
+    const match = nodeMatchesSearch(node,q);
+    if(!match) $n.addClass('dim');
+    const $dot = $('<div class="pin-dot"></div>').css('background', meta.color);
+    const $card = $('<div class="pin-card"></div>');
+    if(node.type==='foto' && node.file && node.file.mime && node.file.mime.startsWith('image/')){
+      $card.append('<img class="pin-thumb" src="'+node.file.data+'">');
+    }
+    $card.append('<div class="pin-type-row" style="color:'+meta.color+'">'+meta.icon+'<span>'+meta.label+'</span></div>');
+    $card.append('<h4>'+escapeHtml(node.title||'(tanpa judul)')+'</h4>');
+    if(node.desc) $card.append('<div class="snippet">'+escapeHtml(node.desc)+'</div>');
+    if(node.person || node.place){
+      let extra = [];
+      if(node.person) extra.push('👤 '+escapeHtml(node.person));
+      if(node.place) extra.push('📍 '+escapeHtml(node.place));
+      $card.append('<div class="snippet">'+extra.join(' &nbsp;·&nbsp; ')+'</div>');
+    }
+    if(node.tags && node.tags.length){
+      const $tags = $('<div class="pin-tags"></div>');
+      node.tags.forEach(t=> $tags.append('<span class="chip">'+escapeHtml(t)+'</span>'));
+      $card.append($tags);
+    }
+    $n.append($dot, $card);
+    $n.on('mousedown', function(e){
+      e.stopPropagation();
+      if(connectMode) return;
+      draggingNode = node.id; dragStart={x:e.clientX,y:e.clientY}; dragNodeOrigin={x:node.x,y:node.y};
+    });
+    $n.on('click', function(e){
+      e.stopPropagation();
+      if(connectMode){ handleConnectClick(node.id); return; }
+      openNodeModal(node.id);
+    });
+    $cont.append($n);
+  });
+}
+
+function handleConnectClick(nodeId){
+  if(!pendingNodeId){
+    pendingNodeId = nodeId;
+    $('.pin-node').removeClass('pending');
+    $('#node-'+nodeId).addClass('pending');
+    return;
+  }
+  if(pendingNodeId === nodeId){
+    pendingNodeId = null;
+    $('.pin-node').removeClass('pending');
+    return;
+  }
+  openEdgeModal(null, pendingNodeId, nodeId);
+  pendingNodeId = null;
+  $('.pin-node').removeClass('pending');
+}
+
+$('#btnConnectMode').on('click', function(){
+  connectMode = !connectMode;
+  $(this).toggleClass('active-mode', connectMode);
+  $(this).css('background', connectMode ? 'var(--gold)' : '');
+  $('#connectHint').toggleClass('hidden', !connectMode);
+  pendingNodeId = null; $('.pin-node').removeClass('pending');
+});
+$('#connectHintClose').on('click', function(){
+  connectMode=false; $('#btnConnectMode').css('background','');
+  $('#connectHint').addClass('hidden'); pendingNodeId=null; $('.pin-node').removeClass('pending');
+});
+
+/* ---------------- EDGES (red string) ---------------- */
+function edgeColor(){ return getComputedStyle(document.body).getPropertyValue('--string').trim() || '#a91e22'; }
+
+function renderEdges(){
+  const c = currentCase(); if(!c) return;
+  const $svg = $('#stringSvg').empty();
+  c.edges.forEach(edge=> drawEdge(edge));
+}
+function pathForEdge(a,b){
+  const mx = (a.x+b.x)/2, my=(a.y+b.y)/2;
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const len = Math.max(1, Math.sqrt(dx*dx+dy*dy));
+  const bow = Math.min(60, len*0.12);
+  const nx = -dy/len, ny = dx/len;
+  const cx = mx + nx*bow, cy = my + ny*bow;
+  return 'M '+a.x+' '+a.y+' Q '+cx+' '+cy+' '+b.x+' '+b.y;
+}
+function drawEdge(edge){
+  const c = currentCase();
+  const a = c.nodes.find(n=>n.id===edge.from), b = c.nodes.find(n=>n.id===edge.to);
+  if(!a||!b) return;
+  $('#estr-'+edge.id).remove(); $('#ehit-'+edge.id).remove(); $('#elbl-'+edge.id).remove();
+  const d = pathForEdge(a,b);
+  const col = edgeColor();
+  const $path = $(document.createElementNS('http://www.w3.org/2000/svg','path'));
+  $path.attr({d:d, class:'string', id:'estr-'+edge.id, stroke:col, 'stroke-width':2.4, fill:'none', 'stroke-linecap':'round'});
+  const $hit = $(document.createElementNS('http://www.w3.org/2000/svg','path'));
+  $hit.attr({d:d, class:'string-hit', id:'ehit-'+edge.id});
+  $hit.on('click', function(e){ e.stopPropagation(); openEdgeModal(edge.id); });
+  $('#stringSvg').append($path).append($hit);
+  if(edge.label){
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const $lbl = $(document.createElementNS('http://www.w3.org/2000/svg','text'));
+    $lbl.attr({x:mx, y:my-8, id:'elbl-'+edge.id, 'text-anchor':'middle', fill:col, 'font-size':11, 'font-weight':700, style:'pointer-events:none;font-family:Zen Kaku Gothic New,sans-serif;'});
+    $lbl.text(edge.label);
+    $('#stringSvg').append($lbl);
+  }
+}
+function drawEdgesForNode(nodeId){
+  const c = currentCase(); if(!c) return;
+  c.edges.filter(e=>e.from===nodeId||e.to===nodeId).forEach(drawEdge);
+}
+
+function openEdgeModal(edgeId, fromId, toId){
+  pendingEdgeEdit = edgeId;
+  pendingEdgeFrom = fromId; pendingEdgeTo = toId;
+  if(edgeId){
+    const c = currentCase(); const edge = c.edges.find(e=>e.id===edgeId);
+    $('#edgeModalTitle').text('Sunting Hubungan');
+    $('#edgeLabelInput').val(edge.label||'');
+    $('#edgeDeleteZone').removeClass('hidden');
+  } else {
+    $('#edgeModalTitle').text('Buat Hubungan Baru');
+    $('#edgeLabelInput').val('');
+    $('#edgeDeleteZone').addClass('hidden');
+  }
+  openModal('edgeModal');
+}
+$('#btnSaveEdge').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  const label = $('#edgeLabelInput').val().trim();
+  if(pendingEdgeEdit){
+    const edge = c.edges.find(e=>e.id===pendingEdgeEdit);
+    edge.label = label;
+  } else {
+    c.edges.push({id:uid(), from:pendingEdgeFrom, to:pendingEdgeTo, label});
+    notify('success','Benang merah terhubung');
+  }
+  saveDb(); renderEdges(); closeModal('edgeModal');
+});
+$('#btnDeleteEdge').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  const id = pendingEdgeEdit;
+  closeModal('edgeModal');
+  c.edges = c.edges.filter(e=>e.id!==id);
+  saveDb(); renderEdges();
+  notify('success','Hubungan diputuskan');
+});
+
+/* ---------------- NODE MODAL ---------------- */
+function buildTypePicker(activeType){
+  const $p = $('#typePicker').empty();
+  Object.keys(TYPE_META).forEach(key=>{
+    const meta = TYPE_META[key];
+    const $opt = $('<div class="type-opt" data-type="'+key+'"></div>').css('--type-c', meta.color);
+    $opt.html(meta.icon+'<span>'+meta.label+'</span>');
+    if(key===activeType) $opt.addClass('active');
+    $opt.on('click', function(){
+      $('.type-opt').removeClass('active');
+      $(this).addClass('active');
+    });
+    $p.append($opt);
+  });
+}
+function selectedType(){
+  const $a = $('.type-opt.active');
+  return $a.length ? $a.data('type') : 'catatan';
+}
+
+function openNodeModal(nodeId){
+  editingNodeId = nodeId || null;
+  const c = currentCase();
+  const node = nodeId ? c.nodes.find(n=>n.id===nodeId) : null;
+  $('#nodeModalTitle').text(node ? 'Sunting Data' : 'Tambah Data');
+  buildTypePicker(node ? node.type : 'catatan');
+  $('#nodeTitleInput').val(node ? node.title : '');
+  $('#nodeDescInput').val(node ? node.desc : '');
+  $('#nodePersonInput').val(node ? node.person : '');
+  $('#nodePlaceInput').val(node ? node.place : '');
+  $('#nodeDateInput').val(node ? node.date : '');
+  $('#nodeTagsInput').val(node && node.tags ? node.tags.join(', ') : '');
+  currentFileData = node && node.file ? node.file : null;
+  renderFilePreview();
+  $('#nodeDeleteZone').toggleClass('hidden', !node);
+  openModal('nodeModal');
+}
+$('#btnAddNode').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  openNodeModal(null);
+});
+
+function renderFilePreview(){
+  const $area = $('#filePreviewArea').empty();
+  if(!currentFileData){ return; }
+  const f = currentFileData;
+  if(f.mime && f.mime.startsWith('image/')){
+    $area.append('<img src="'+f.data+'">');
+  } else if(f.mime && f.mime.startsWith('audio/')){
+    $area.append('<audio controls src="'+f.data+'"></audio>');
+  } else if(f.mime && f.mime.startsWith('video/')){
+    $area.append('<video controls src="'+f.data+'"></video>');
+  } else {
+    $area.append('<div class="doc-chip">'+TYPE_META.dokumen.icon+' <span>'+escapeHtml(f.name)+'</span></div>');
+  }
+  $area.append('<div><button type="button" class="remove-file">Hapus lampiran</button></div>');
+  $area.find('.remove-file').on('click', function(){ currentFileData=null; renderFilePreview(); });
+}
+$('#fileDropZone').on('click', ()=> $('#fileInputHidden').trigger('click'));
+$('#fileInputHidden').on('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    currentFileData = {name:file.name, mime:file.type||'application/octet-stream', data:reader.result};
+    renderFilePreview();
+    const activeType = selectedType();
+    if(!activeType || activeType==='catatan'){
+      let guess = 'dokumen';
+      if(file.type.startsWith('image/')) guess='foto';
+      else if(file.type.startsWith('audio/')) guess='audio';
+      else if(file.type.startsWith('video/')) guess='video';
+      $('.type-opt').removeClass('active');
+      $('.type-opt[data-type="'+guess+'"]').addClass('active');
+    }
+  };
+  reader.onerror = function(){ notify('error','Gagal membaca file'); };
+  reader.readAsDataURL(file);
+  $(this).val('');
+});
+$('#fileDropZone').on('dragover', function(e){ e.preventDefault(); $(this).css('border-color','var(--red)'); });
+$('#fileDropZone').on('dragleave', function(e){ $(this).css('border-color',''); });
+$('#fileDropZone').on('drop', function(e){
+  e.preventDefault(); $(this).css('border-color','');
+  const file = e.originalEvent.dataTransfer.files[0]; if(!file) return;
+  $('#fileInputHidden')[0].files = e.originalEvent.dataTransfer.files;
+  $('#fileInputHidden').trigger('change');
+});
+
+$('#btnSaveNode').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  const title = $('#nodeTitleInput').val().trim();
+  if(!title){ notify('warn','Judul data wajib diisi'); return; }
+  const tags = $('#nodeTagsInput').val().split(',').map(t=>t.trim()).filter(Boolean);
+  if(editingNodeId){
+    const node = c.nodes.find(n=>n.id===editingNodeId);
+    node.type = selectedType();
+    node.title = title;
+    node.desc = $('#nodeDescInput').val().trim();
+    node.person = $('#nodePersonInput').val().trim();
+    node.place = $('#nodePlaceInput').val().trim();
+    node.date = $('#nodeDateInput').val();
+    node.tags = tags;
+    node.file = currentFileData;
+    notify('success','Data diperbarui', title);
+  } else {
+    const cx = (5000/2 - board.panX)/board.zoom + (Math.random()*160-80);
+    const cy = (5000/2 - board.panY)/board.zoom + (Math.random()*160-80);
+    const node = {
+      id: uid(), type: selectedType(), title, desc: $('#nodeDescInput').val().trim(),
+      person: $('#nodePersonInput').val().trim(), place: $('#nodePlaceInput').val().trim(),
+      date: $('#nodeDateInput').val(), tags, file: currentFileData,
+      x: 400 + Math.random()*200, y: 300 + Math.random()*200, createdAt: Date.now()
+    };
+    c.nodes.push(node);
+    notify('success','Data ditambahkan', title);
+  }
+  saveDb(); closeModal('nodeModal'); renderNodes(); renderEdges(); renderSideList(); renderCaseList();
+});
+$('#btnDeleteNode').on('click', function(){
+  const c = currentCase(); if(!c) return;
+  const id = editingNodeId;
+  closeModal('nodeModal');
+  confirmAction('Hapus Data', 'Data ini beserta seluruh hubungannya akan dihapus. Lanjutkan?', ()=>{
+    c.nodes = c.nodes.filter(n=>n.id!==id);
+    c.edges = c.edges.filter(e=>e.from!==id && e.to!==id);
+    saveDb(); renderNodes(); renderEdges(); renderSideList(); renderCaseList();
+    notify('success','Data dihapus');
+  });
+});
+
+/* ---------------- SEARCH (board) ---------------- */
+$('#nodeSearch').on('input', function(){ renderNodes(); });
+
+/* ---------------- SIDE LIST ---------------- */
+$('#btnOpenSideList').on('click', ()=> $('#sideList').addClass('open'));
+$('#closeSideList').on('click', ()=> $('#sideList').removeClass('open'));
+
+function renderSideList(){
+  const c = currentCase(); if(!c) return;
+  const sort = $('#sideSort').val();
+  const tagF = $('#sideTagFilter').val();
+
+  const allTags = new Set();
+  c.nodes.forEach(n=> (n.tags||[]).forEach(t=>allTags.add(t)));
+  const $tagSel = $('#sideTagFilter');
+  const prevVal = $tagSel.val();
+  $tagSel.empty().append('<option value="">Semua tag</option>');
+  Array.from(allTags).sort().forEach(t=> $tagSel.append('<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>'));
+  $tagSel.val(prevVal||'');
+
+  let list = c.nodes.filter(n=> nodeMatchesTag(n, $tagSel.val()));
+  list = list.slice().sort((a,b)=>{
+    if(sort==='baru') return b.createdAt-a.createdAt;
+    if(sort==='lama') return a.createdAt-b.createdAt;
+    if(sort==='az') return (a.title||'').localeCompare(b.title||'');
+    if(sort==='tipe') return (a.type||'').localeCompare(b.type||'');
+    return 0;
+  });
+  $('#sideCount').text('('+list.length+')');
+  const $wrap = $('#sideNodeList').empty();
+  if(list.length===0){
+    $wrap.append('<div class="empty-state"><div class="ico">🔍</div><p>Belum ada data yang cocok.</p></div>');
+    return;
+  }
+  list.forEach(n=>{
+    const meta = TYPE_META[n.type]||TYPE_META.lainnya;
+    const $item = $('<div class="side-node-item"></div>');
+    $item.html('<div style="color:'+meta.color+'">'+meta.icon+'</div><div><div class="t">'+escapeHtml(n.title)+'</div><div class="m">'+meta.label+(n.date?(' · '+fmtDate(n.date)):'')+'</div></div>');
+    $item.on('click', function(){ focusNode(n.id); });
+    $wrap.append($item);
+  });
+}
+$('#sideSort, #sideTagFilter').on('change', renderSideList);
+
+function focusNode(nodeId){
+  const c = currentCase(); const node = c.nodes.find(n=>n.id===nodeId); if(!node) return;
+  const wrapW = $('#boardCanvasWrap').width(), wrapH = $('#boardCanvasWrap').height();
+  board.panX = wrapW/2 - node.x*board.zoom;
+  board.panY = wrapH/2 - node.y*board.zoom;
+  applyBoardTransform();
+  $('.pin-node').removeClass('selected');
+  $('#node-'+nodeId).addClass('selected');
+  setTimeout(()=> $('#node-'+nodeId).removeClass('selected'), 1600);
+}
+
+/* ---------------- BACKUP / RESTORE / RESET ---------------- */
+$('#menuBackup').html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v13"/><polyline points="7 11 12 16 17 11"/><path d="M4 19h16"/></svg>');
+$('#menuRestore').html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21V8"/><polyline points="7 13 12 8 17 13"/><path d="M4 4h16"/></svg>');
+$('#menuReset').html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>');
+
+$('#menuBackup').attr('title','Cadangkan data').on('click', function(){
+  const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = 'papan-investigasi-backup-'+today+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  notify('success','Cadangan diunduh','Simpan berkas ini di tempat yang aman.');
+});
+$('#menuRestore').attr('title','Pulihkan data').on('click', ()=> $('#restoreFileInput').trigger('click'));
+$('#restoreFileInput').on('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed || !Array.isArray(parsed.cases)) throw new Error('format tidak valid');
+      confirmAction('Pulihkan Data', 'Ini akan menggantikan seluruh data yang ada saat ini dengan isi berkas cadangan. Lanjutkan?', ()=>{
+        db = parsed;
+        if(!db.settings) db.settings = {theme:'light'};
+        saveDb(); applyTheme(); showCaseList();
+        notify('success','Data berhasil dipulihkan');
+      });
+    }catch(err){
+      notify('error','Gagal memulihkan','Berkas tidak dikenali sebagai cadangan yang valid.');
+    }
+  };
+  reader.readAsText(file);
+  $(this).val('');
+});
+$('#menuReset').attr('title','Atur ulang semua data').on('click', function(){
+  confirmAction('Atur Ulang Semua Data', 'Seluruh kasus, data, dan pengaturan akan dihapus permanen dari peramban ini. Tindakan ini tidak dapat dibatalkan. Lanjutkan?', ()=>{
+    db = {settings:{theme:db.settings.theme}, cases:[]};
+    saveDb(); showCaseList();
+    notify('success','Data telah diatur ulang');
+  });
+});
+
+/* ---------------- CELEBRATION ---------------- */
+function celebrate(){
+  const $ov = $('#celebrateOverlay').empty();
+  const count = 46;
+  for(let i=0;i<count;i++){
+    const left = Math.random()*100;
+    const dur = 3.2 + Math.random()*2.6;
+    const delay = Math.random()*1.2;
+    const drift = (Math.random()*140-70)+'px';
+    const size = 10 + Math.random()*10;
+    const $p = $('<div class="petal"></div>').css({
+      left:left+'vw', width:size+'px', height:size+'px',
+      animationDuration:dur+'s', animationDelay:delay+'s', '--drift':drift
+    });
+    $ov.append($p);
+    setTimeout(()=> $p.remove(), (dur+delay)*1000+200);
+  }
+  const $stamp = $('<div class="stamp-pop"><div class="big">解決</div><div class="small">CASE SOLVED</div></div>');
+  $ov.append($stamp);
+  setTimeout(()=>{
+    $stamp.addClass('stamp-fadeout');
+    setTimeout(()=> $stamp.remove(), 550);
+  }, 1900);
+}
+
+/* ---------------- KEYBOARD ---------------- */
+$(document).on('keydown', function(e){
+  if(e.key==='Escape'){
+    $('.modal-overlay.open').each(function(){ closeModal(this.id); });
+    if(connectMode){ connectMode=false; $('#btnConnectMode').css('background',''); $('#connectHint').addClass('hidden'); pendingNodeId=null; $('.pin-node').removeClass('pending'); }
+  }
+});
+
+/* ---------------- INIT ---------------- */
+applyTheme();
+showCaseList();
+
+})();
+</script>
+</body>
+</html>
